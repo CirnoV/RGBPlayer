@@ -6,9 +6,16 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:local="clr-namespace:RGBPlayer"
         mc:Ignorable="d"
+        TitleCaps="False"
         SaveWindowPosition="True"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
-    </Grid>
+        GlowBrush="{DynamicResource AccentColorBrush}"
+        Background="{DynamicResource WhiteBrush}"
+        Foreground="{DynamicResource BlackBrush}"
+        Title="RGBPlayer" Height="350" Width="525">
+
+	<Grid>
+		<StackPanel>
+			<Button x:Name="OpenButton" Content="재생할 파일을 선택해주세요." Click="OpenButton_Click"/>
+		</StackPanel>
+	</Grid>
 </Controls:MetroWindow>
