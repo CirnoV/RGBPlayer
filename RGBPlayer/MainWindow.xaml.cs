@@ -13,8 +13,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using ManagedBass;
-using Microsoft.Win32;
+using RGBPlayer.Core;
+using RGBPlayer.Models;
 
 namespace RGBPlayer
 {
@@ -23,78 +23,42 @@ namespace RGBPlayer
 	/// </summary>
 	public partial class MainWindow : MetroWindow
 	{
-		private readonly OpenFileDialog _FileDialog;
-		private int _Channel;
-
-		public string FileStatus
-		{
-			get
-			{
-				return (string)OpenButton.Content;
-			}
-			set
-			{
-				OpenButton.Content = value;
-			}
-		}
-
-		~MainWindow()
-		{
-			Bass.Free();
-		}
-
 		public MainWindow()
 		{
+			RGBData.Current.Initialize();
+
 			InitializeComponent();
 
-			_FileDialog = new OpenFileDialog
-			{
-				Filter = "재생가능 파일|*.mp3; *.ogg; *.wav|모든 파일|*.*"
-			};
+			DataContext = new MainViewModel();
+		}
 
-			if (!Bass.Init())
+		private void MetroWindow_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (Keyboard.IsKeyDown(Key.Delete))
 			{
-				MessageBox.Show("Can't initialize device");
-				Application.Current.Shutdown();
+				var list = NoteList.SelectedItems.Cast<NoteData>().ToList();
+				((MainViewModel)DataContext).DeleteNote(list);
+			}
+			else if (Keyboard.IsKeyDown(Key.A))
+			{
+				if (Keyboard.IsKeyDown(Key.LeftCtrl))
+				{
+					NoteList.SelectAll();
+				}
+				else
+				{
+					((MainViewModel)DataContext).KeyDown();
+				}
+			}
+			else
+			{
+				((MainViewModel)DataContext).KeyDown();
 			}
 		}
 
-		private void OpenButton_Click(object sender, RoutedEventArgs e)
+		private void MetroWindow_KeyUp(object sender, KeyEventArgs e)
 		{
-			OpenFile();
-		}
-
-		public void OpenFile()
-		{
-			if (!_FileDialog.ShowDialog().Value)
-			{
-				return;
-			}
-
-			// free tempo, stream, music & bpm/beat callbacks
-			Bass.StreamFree(_Channel);
-			Bass.MusicFree(_Channel);
-
-			// create decode channel
-			_Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Decode);
-
-			if (_Channel == 0)
-				_Channel = Bass.MusicLoad(_FileDialog.FileName, 0, 0, BassFlags.MusicRamp | BassFlags.Prescan | BassFlags.Decode, 0);
-
-			if (_Channel == 0)
-			{
-				// not a WAV/MP3 or MOD
-				FileStatus = "재생할 파일을 선택해주세요.";
-				return;
-			}
-
-			Bass.SampleGetChannel(_Channel);
-
-			// update the button to show the loaded file name (without path)
-			FileStatus = System.IO.Path.GetFileName(_FileDialog.FileName);
-
-			// play new created stream
-			Bass.ChannelPlay(_Channel);
+			((MainViewModel)DataContext).KeyUp();
 		}
 	}
 }

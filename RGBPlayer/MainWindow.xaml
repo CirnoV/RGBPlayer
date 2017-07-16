@@ -11,11 +11,105 @@
         GlowBrush="{DynamicResource AccentColorBrush}"
         Background="{DynamicResource WhiteBrush}"
         Foreground="{DynamicResource BlackBrush}"
+		Keyboard.KeyDown="MetroWindow_KeyDown"
+		Keyboard.KeyUp="MetroWindow_KeyUp"
         Title="RGBPlayer" Height="350" Width="525">
+	
+	<Controls:MetroWindow.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatSlider.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Controls:MetroWindow.Resources>
 
 	<Grid>
-		<StackPanel>
-			<Button x:Name="OpenButton" Content="재생할 파일을 선택해주세요." Click="OpenButton_Click"/>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		
+		<StackPanel Grid.Row="0">
+			<StackPanel.Resources>
+				<Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+					<Setter Property="Margin" Value="5"/>
+				</Style>
+			</StackPanel.Resources>
+			<Button Content="{Binding FileStatus}" Command="{Binding LoadCommand}"/>
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+				<Button Grid.Column="0" Content="재생" Command="{Binding PlayCommand}"/>
+				<Button Grid.Column="1" Content="일시정지" Command="{Binding PauseCommand}"/>
+				<Button Grid.Column="2" Content="정지" Command="{Binding StopCommand}"/>
+			</Grid>
+			<Grid Margin="0,0,0,5">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<TextBlock Grid.Column="0"
+						   VerticalAlignment="Center"
+						   Text="{Binding MusicTime}"/>
+				<CheckBox Grid.Column="1"
+						  VerticalAlignment="Center"
+						  Content="재생시 노트 소리 듣기"
+						  IsChecked="{Binding IsPlayNote}"/>
+			</Grid>
+			<Button Content="테스트" Visibility="Collapsed" Command="{Binding TestCommand}"/>
+		</StackPanel>
+
+		<ListView x:Name="NoteList"
+				  Grid.Row="1"
+				  BorderBrush="{x:Null}"
+				  ItemsSource="{Binding NoteData}"
+				  Background="#FF202020"
+				  BorderThickness=".99"
+				  SelectionMode="Extended">
+			<ListView.View>
+				<GridView>
+					<GridViewColumn Width="Auto">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding NoteTimeText}"/>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+						<GridViewColumnHeader>
+							<TextBlock Text="시간"/>
+						</GridViewColumnHeader>
+					</GridViewColumn>
+					<GridViewColumn Width="Auto">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Note.NoteName}"/>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+						<GridViewColumnHeader>
+							<TextBlock Text="노트"/>
+						</GridViewColumnHeader>
+					</GridViewColumn>
+				</GridView>
+			</ListView.View>
+		</ListView>
+
+		<StackPanel Grid.Row="2">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<Button Grid.Column="0" Margin="5" Content="노트 정리" Command="{Binding OrderNoteCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+				<Button Grid.Column="1" Margin="5" Content="노트 스크립트 복사" Command="{Binding CopyNoteCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
+			</Grid>
+			<Slider IsMoveToPointEnabled="True"
+                    Style="{DynamicResource FlatSlider}"
+					Value="{Binding MusicSlider}"/>
 		</StackPanel>
 	</Grid>
 </Controls:MetroWindow>
