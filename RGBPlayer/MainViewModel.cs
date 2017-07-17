@@ -29,8 +29,8 @@ namespace RGBPlayer
 		private double _BPMTemp;
 
 		#region BPM 변경통지 프로퍼티
-		private int _BPM;
-		public int BPM
+		private double _BPM;
+		public double BPM
 		{
 			get
 			{
@@ -92,7 +92,7 @@ namespace RGBPlayer
 		}
 		#endregion
 
-		#region Music 프로퍼티
+		#region MusicTime 프로퍼티
 		public string MusicTime
 		{
 			get
@@ -210,6 +210,15 @@ namespace RGBPlayer
 				return _InitBPMCommand ?? (_InitBPMCommand = new DelegateCommand(x => InitBPM()));
 			}
 		}
+
+		private DelegateCommand _ResetBPMCommand;
+		public ICommand ResetBPMCommand
+		{
+			get
+			{
+				return _ResetBPMCommand ?? (_ResetBPMCommand = new DelegateCommand(x => ResetBPM()));
+			}
+		}
 		#endregion
 
 		~MainViewModel()
@@ -311,7 +320,7 @@ namespace RGBPlayer
 
 		public void Test()
 		{
-			Bass.ChannelSetPosition(_BGMChannel, Bass.ChannelSeconds2Bytes(_BGMChannel, 10.0));
+
 		}
 
 		public void OrderNote()
@@ -344,6 +353,24 @@ namespace RGBPlayer
 
 			int channel = Bass.CreateStream(soundPath, 0, 0, BassFlags.Prescan | BassFlags.AutoFree);
 			Bass.ChannelPlay(channel);
+		}
+
+		public void InitBPM()
+		{
+			if (BPMOffset == 0 || MusicTime != "-1")
+			{
+				BPMOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
+			}
+			else
+			{
+
+			}
+		}
+
+		public void ResetBPM()
+		{
+			BPM = 0.0;
+			BPMOffset = 0;
 		}
 
 		#region KeyBinding
@@ -399,17 +426,6 @@ namespace RGBPlayer
 			}
 		}
 
-		public void InitBPM()
-		{
-			if(BPMOffset == 0 || BPMOffset == -1000)
-			{
-				BPMOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
-			}
-			else
-			{
-
-			}
-		}
 		#endregion
 	}
 }

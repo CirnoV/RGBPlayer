@@ -61,70 +61,99 @@
 						  Content="재생시 노트 소리 듣기"
 						  IsChecked="{Binding IsPlayNote}"/>
 			</Grid>
-			<Button Content="테스트" Visibility="Collapsed" Command="{Binding TestCommand}"/>
 		</StackPanel>
 
-		<Grid Grid.Row="1">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<ListView x:Name="NoteList"
-				  BorderBrush="{x:Null}"
-				  ItemsSource="{Binding NoteData}"
-				  Background="#FF202020"
-				  BorderThickness=".99"
-				  SelectionMode="Extended">
-				<ListView.View>
-					<GridView>
-						<GridViewColumn Width="Auto">
-							<GridViewColumn.CellTemplate>
-								<DataTemplate>
-									<TextBlock Text="{Binding NoteTimeText}"/>
-								</DataTemplate>
-							</GridViewColumn.CellTemplate>
-							<GridViewColumnHeader>
-								<TextBlock Text="시간"/>
-							</GridViewColumnHeader>
-						</GridViewColumn>
-						<GridViewColumn Width="Auto">
-							<GridViewColumn.CellTemplate>
-								<DataTemplate>
-									<TextBlock Text="{Binding Note.NoteName}"/>
-								</DataTemplate>
-							</GridViewColumn.CellTemplate>
-							<GridViewColumnHeader>
-								<TextBlock Text="노트"/>
-							</GridViewColumnHeader>
-						</GridViewColumn>
-					</GridView>
-				</ListView.View>
-			</ListView>
-			<StackPanel Grid.Column="2" Margin="0,0,5,0">
-				<DockPanel Margin="0,0,0,5">
-					<TextBlock Margin="0,4,0,0" Text="BPM: "/>
-					<TextBox MinWidth="40" Text="{Binding BPM}"/>
-				</DockPanel>
-				<DockPanel Margin="0,0,0,5">
-					<TextBlock Margin="0,4,0,0" Text="Offset: "/>
-					<TextBox MinWidth="40" Text="{Binding BPMOffset}"/>
-				</DockPanel>
-				<Button Margin="0,0,0,5" Content="초기화" Style="{DynamicResource SquareButtonStyle}"/>
-				<Button Content="bpm 측정" ToolTip="박자에 맞춰 버튼을 누르거나 T키를 누르세요." Command="{Binding InitBPMCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
-			</StackPanel>
-		</Grid>
+		<TabControl Grid.Row="1" Controls:TabControlHelper.Underlined="TabPanel" Controls:TabControlHelper.IsUnderlined="True">
+			<TabItem Controls:ControlsHelper.HeaderFontSize="15" Header="노트 설정">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<ListView x:Name="NoteList"
+							  BorderBrush="{x:Null}"
+							  ItemsSource="{Binding NoteData}"
+							  Background="#FF202020"
+							  BorderThickness=".99"
+							  SelectionMode="Extended">
+						<ListView.View>
+							<GridView>
+								<GridViewColumn Width="Auto">
+									<GridViewColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding NoteTimeText}"/>
+										</DataTemplate>
+									</GridViewColumn.CellTemplate>
+									<GridViewColumnHeader>
+										<TextBlock Text="시간"/>
+									</GridViewColumnHeader>
+								</GridViewColumn>
+								<GridViewColumn Width="Auto">
+									<GridViewColumn.CellTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding Note.NoteName}"/>
+										</DataTemplate>
+									</GridViewColumn.CellTemplate>
+									<GridViewColumnHeader>
+										<TextBlock Text="노트"/>
+									</GridViewColumnHeader>
+								</GridViewColumn>
+							</GridView>
+						</ListView.View>
+					</ListView>
+					<Grid Grid.Row="1">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<Button Grid.Column="0" Margin="5" Content="노트 정리" Command="{Binding OrderNoteCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+						<Button Grid.Column="1" Margin="5" Content="노트 스크립트 복사" Command="{Binding CopyNoteCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
+					</Grid>
+				</Grid>
+			</TabItem>
+			<TabItem Controls:ControlsHelper.HeaderFontSize="15" Header="타이밍 설정">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<ListView Grid.Column="0"/>
+
+						<StackPanel Grid.Column="1" Margin="0,0,5,0">
+							<DockPanel Margin="0,0,0,5">
+								<TextBlock Margin="0,4,0,0" Text="BPM: "/>
+								<TextBox MinWidth="40" Text="{Binding BPM}"/>
+							</DockPanel>
+							<DockPanel Margin="0,0,0,5">
+								<TextBlock Margin="0,4,0,0" Text="Offset: "/>
+								<TextBox MinWidth="40" Text="{Binding BPMOffset}"/>
+							</DockPanel>
+						</StackPanel>
+					</Grid>
+
+					<Grid Grid.Row="1">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<Button Grid.Column="0" Margin="5" Content="초기화" Command="{Binding ResetBPMCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+						<Button Grid.Column="1" Margin="5" Content="bpm 측정" ToolTip="박자에 맞춰 버튼을 누르거나 T키를 누르세요." Command="{Binding InitBPMCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
+					</Grid>
+				</Grid>
+			</TabItem>
+		</TabControl>
 
 		<StackPanel Grid.Row="2">
-			<Grid>
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="*"/>
-				</Grid.ColumnDefinitions>
-
-				<Button Grid.Column="0" Margin="5" Content="노트 정리" Command="{Binding OrderNoteCommand}" Style="{DynamicResource SquareButtonStyle}"/>
-				<Button Grid.Column="1" Margin="5" Content="노트 스크립트 복사" Command="{Binding CopyNoteCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
-			</Grid>
 			<Slider IsMoveToPointEnabled="True"
                     Style="{DynamicResource FlatSlider}"
 					Value="{Binding MusicSlider}"/>
