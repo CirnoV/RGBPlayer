@@ -26,6 +26,40 @@ namespace RGBPlayer
 
 		DispatcherTimer _MusicTimer;
 
+		private double _BPMTemp;
+
+		#region BPM 변경통지 프로퍼티
+		private int _BPM;
+		public int BPM
+		{
+			get
+			{
+				return _BPM;
+			}
+			set
+			{
+				_BPM = value;
+				RaisePropertyChanged(nameof(BPM));
+			}
+		}
+		#endregion
+
+		#region BPMOffset 변경통지 프로퍼티
+		private int _BPMOffset;
+		public int BPMOffset
+		{
+			get
+			{
+				return _BPMOffset;
+			}
+			set
+			{
+				_BPMOffset = value;
+				RaisePropertyChanged(nameof(BPMOffset));
+			}
+		}
+		#endregion
+
 		#region NoteData 변경통지 프로퍼티
 		private ObservableCollection<NoteData> _NoteData;
 		public ObservableCollection<NoteData> NoteData
@@ -165,6 +199,15 @@ namespace RGBPlayer
 			get
 			{
 				return _CopyNoteCommand ?? (_CopyNoteCommand = new DelegateCommand(x => CopyNote()));
+			}
+		}
+
+		private DelegateCommand _InitBPMCommand;
+		public ICommand InitBPMCommand
+		{
+			get
+			{
+				return _InitBPMCommand ?? (_InitBPMCommand = new DelegateCommand(x => InitBPM()));
 			}
 		}
 		#endregion
@@ -353,6 +396,18 @@ namespace RGBPlayer
 				{
 					note.Value.IsInput2Down = false;
 				}
+			}
+		}
+
+		public void InitBPM()
+		{
+			if(BPMOffset == 0 || BPMOffset == -1000)
+			{
+				BPMOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
+			}
+			else
+			{
+
 			}
 		}
 		#endregion

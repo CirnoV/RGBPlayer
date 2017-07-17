@@ -34,7 +34,7 @@ namespace RGBPlayer
 
 		private void MetroWindow_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (Keyboard.IsKeyDown(Key.Delete))
+			if (Keyboard.IsKeyDown(Key.Delete) || Keyboard.IsKeyDown(Key.Back))
 			{
 				var list = NoteList.SelectedItems.Cast<NoteData>().ToList();
 				((MainViewModel)DataContext).DeleteNote(list);
@@ -49,6 +49,10 @@ namespace RGBPlayer
 				{
 					((MainViewModel)DataContext).KeyDown();
 				}
+			}
+			else if (Keyboard.IsKeyDown(Key.T))
+			{
+				((MainViewModel)DataContext).InitBPM();
 			}
 			else
 			{
