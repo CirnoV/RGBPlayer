@@ -26,7 +26,8 @@ namespace RGBPlayer
 
 		DispatcherTimer _MusicTimer;
 
-		private double _BPMTemp;
+		private int _BPMTemp;
+		private List<int> _BPMTempList;
 
 		#region BPM 변경통지 프로퍼티
 		private double _BPM;
@@ -34,11 +35,12 @@ namespace RGBPlayer
 		{
 			get
 			{
-				return _BPM;
+				return Convert.ToDouble(_BPM.ToString("f3"));
 			}
 			set
 			{
-				_BPM = value;
+				_BPM = Convert.ToDouble(value.ToString("f3"));
+				ResetBeat();
 				RaisePropertyChanged(nameof(BPM));
 			}
 		}
@@ -55,6 +57,7 @@ namespace RGBPlayer
 			set
 			{
 				_BPMOffset = value;
+				ResetBeat();
 				RaisePropertyChanged(nameof(BPMOffset));
 			}
 		}
@@ -116,6 +119,7 @@ namespace RGBPlayer
 				var pos = Bass.ChannelSeconds2Bytes(_BGMChannel, _BGMLength * (value / 100));
 				Bass.ChannelSetPosition(_BGMChannel, pos);
 				_IgnoreNoteTime = _BGMLength * (value / 100);
+				ResetBeat();
 
 				_MusicSlider = value;
 			}
@@ -134,6 +138,23 @@ namespace RGBPlayer
 			{
 				_IsPlayNote = value;
 				RaisePropertyChanged(nameof(IsPlayNote));
+			}
+		}
+		#endregion
+
+		#region TimimgTabSelected 변경통지 프로퍼티
+		private bool _TimimgTabSelected;
+		public bool TimimgTabSelected
+		{
+			get
+			{
+				return _TimimgTabSelected;
+			}
+			set
+			{
+				ResetBeat();
+				_TimimgTabSelected = value;
+				RaisePropertyChanged(nameof(TimimgTabSelected));
 			}
 		}
 		#endregion
@@ -219,6 +240,15 @@ namespace RGBPlayer
 				return _ResetBPMCommand ?? (_ResetBPMCommand = new DelegateCommand(x => ResetBPM()));
 			}
 		}
+
+		private DelegateCommand _SetOffsetCommand;
+		public ICommand SetOffsetCommand
+		{
+			get
+			{
+				return _SetOffsetCommand ?? (_SetOffsetCommand = new DelegateCommand(x => SetOffset()));
+			}
+		}
 		#endregion
 
 		~MainViewModel()
@@ -246,20 +276,51 @@ namespace RGBPlayer
 
 			_NoteData = new ObservableCollection<NoteData>();
 			//_NoteData = new List<Models.NoteData>();
+
+			_BPMTempList = new List<int>();
 		}
 
 		private double _IgnoreNoteTime;
+		private double _NextBeatTime;
 		private void _MusicTimer_Tick(object sender, EventArgs e)
 		{
-			if (IsPlayNote && Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
+			if (Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
 			{
 				double currentPos = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
-				var note = NoteData.OrderBy(x => x.NoteTime).FirstOrDefault(x => x.NoteTime > _IgnoreNoteTime && x.NoteTime <= currentPos);
-
-				if(note != null)
+				if (IsPlayNote && !TimimgTabSelected)
 				{
-					PlayNote(note.Note);
-					_IgnoreNoteTime = note.NoteTime;
+					var note = NoteData.OrderBy(x => x.NoteTime).FirstOrDefault(x => x.NoteTime > _IgnoreNoteTime && x.NoteTime <= currentPos);
+
+					if (note != null)
+					{
+						PlayNote(note.Note);
+						_IgnoreNoteTime = note.NoteTime;
+					}
+				}else if (TimimgTabSelected && BPM != 0)
+				{
+					if(_NextBeatTime <= currentPos)
+					{
+						double beatDelay = 1 / (BPM / 60.0);
+						int beatCount = Convert.ToInt32((currentPos - BPMOffset / 1000.0) / beatDelay);
+						_NextBeatTime = _NextBeatTime + beatDelay;
+
+						string beat = "beat.wav";
+
+						if (beatCount % 4 == 0)
+						{
+							beat = "beat2.wav";
+						}
+
+						//EntryAssembly/sound/FileName
+						var soundPath = Path.Combine(
+							Path.GetDirectoryName(Assembly.GetEntryAssembly().Location),
+							"sound",
+							beat
+						);
+
+						int channel = Bass.CreateStream(soundPath, 0, 0, BassFlags.Prescan | BassFlags.AutoFree);
+						Bass.ChannelPlay(channel);
+					}
 				}
 			}
 
@@ -357,20 +418,62 @@ namespace RGBPlayer
 
 		public void InitBPM()
 		{
-			if (BPMOffset == 0 || MusicTime != "-1")
+			if (BPMOffset == 0 && _BGMCurrentTime != -1)
 			{
 				BPMOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
+				_BPMTemp = BPMOffset;
+				_BPMTempList.Clear();
 			}
-			else
+			else if(Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
 			{
+				int newOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
 
+				if (_BPMTempList.Count() > 5)
+				{
+					int timing = (newOffset - _BPMTemp) - Convert.ToInt32(_BPMTempList.Average());
+					if (timing <= 120)
+					{
+						_BPMTempList.Add(newOffset - _BPMTemp);
+
+						BPM = 60.0 / (_BPMTempList.Average() / 1000.0);
+
+						Debug.Print("{0} - {1} = {2} = {3}", newOffset, _BPMTemp, _BPMTempList.Average(), BPM.ToString("f3"));
+
+						_BPMTemp = newOffset;
+
+						ResetBeat();
+					}
+					else
+					{
+						Bass.ChannelSetPosition(_BGMChannel, Bass.ChannelSeconds2Bytes(_BGMChannel, _BPMTemp / 1000.0));
+					}
+				}
+				else
+				{
+					_BPMTempList.Add(newOffset - _BPMTemp);
+					_BPMTemp = newOffset;
+				}
 			}
+		}
+
+		public void ResetBeat()
+		{
+			double currentPos = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
+			double beatDelay = 1 / (BPM / 60.0);
+			int beatMul = Convert.ToInt32(((currentPos + 1.0) - BPMOffset / 1000.0) / beatDelay);
+			_NextBeatTime = (beatDelay * beatMul) + BPMOffset / 1000.0;
+			Debug.Print("{0} - {1}", currentPos.ToString("f3"), _NextBeatTime.ToString("f3"));
 		}
 
 		public void ResetBPM()
 		{
 			BPM = 0.0;
 			BPMOffset = 0;
+		}
+
+		public void SetOffset()
+		{
+			int newOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
 		}
 
 		#region KeyBinding

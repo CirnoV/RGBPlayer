@@ -7,13 +7,12 @@
         xmlns:local="clr-namespace:RGBPlayer"
         mc:Ignorable="d"
         TitleCaps="False"
-        SaveWindowPosition="True"
         GlowBrush="{DynamicResource AccentColorBrush}"
         Background="{DynamicResource WhiteBrush}"
         Foreground="{DynamicResource BlackBrush}"
 		Keyboard.KeyDown="MetroWindow_KeyDown"
 		Keyboard.KeyUp="MetroWindow_KeyUp"
-        Title="RGBPlayer" Height="350" Width="525">
+        Title="RGBPlayer" Height="500" Width="500">
 	
 	<Controls:MetroWindow.Resources>
 		<ResourceDictionary>
@@ -54,6 +53,7 @@
 				</Grid.ColumnDefinitions>
 
 				<TextBlock Grid.Column="0"
+						   Margin="5,0,0,0"
 						   VerticalAlignment="Center"
 						   Text="{Binding MusicTime}"/>
 				<CheckBox Grid.Column="1"
@@ -113,7 +113,9 @@
 					</Grid>
 				</Grid>
 			</TabItem>
-			<TabItem Controls:ControlsHelper.HeaderFontSize="15" Header="타이밍 설정">
+			<TabItem Controls:ControlsHelper.HeaderFontSize="15"
+					 Header="타이밍 설정"
+					 IsSelected="{Binding TimimgTabSelected}">
 				<Grid>
 					<Grid.RowDefinitions>
 						<RowDefinition Height="*"/>
@@ -126,7 +128,38 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 
-						<ListView Grid.Column="0"/>
+						<ListView Grid.Column="0"
+								  BorderBrush="{x:Null}"
+								  ItemsSource="{Binding NoteData}"
+								  Background="#FF202020"
+								  BorderThickness=".99"
+								  SelectionMode="Extended"
+								  Margin="0,0,5,0">
+							<ListView.View>
+								<GridView>
+									<GridViewColumn Width="Auto">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Text="{Binding NoteTimeText}"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+										<GridViewColumnHeader>
+											<TextBlock Text="BPM"/>
+										</GridViewColumnHeader>
+									</GridViewColumn>
+									<GridViewColumn Width="Auto">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Text="{Binding Note.NoteName}"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+										<GridViewColumnHeader>
+											<TextBlock Text="Offset"/>
+										</GridViewColumnHeader>
+									</GridViewColumn>
+								</GridView>
+							</ListView.View>
+						</ListView>
 
 						<StackPanel Grid.Column="1" Margin="0,0,5,0">
 							<DockPanel Margin="0,0,0,5">
@@ -144,10 +177,12 @@
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*"/>
 							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 
 						<Button Grid.Column="0" Margin="5" Content="초기화" Command="{Binding ResetBPMCommand}" Style="{DynamicResource SquareButtonStyle}"/>
-						<Button Grid.Column="1" Margin="5" Content="bpm 측정" ToolTip="박자에 맞춰 버튼을 누르거나 T키를 누르세요." Command="{Binding InitBPMCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
+						<Button Grid.Column="1" Margin="5" Content="Offset 설정" Command="{Binding SetOffsetCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+						<Button Grid.Column="2" Margin="5" Content="bpm 측정" ToolTip="박자에 맞춰 버튼을 누르거나 T키를 누르세요." Command="{Binding InitBPMCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
 					</Grid>
 				</Grid>
 			</TabItem>
