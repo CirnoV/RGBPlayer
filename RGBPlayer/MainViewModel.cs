@@ -271,7 +271,6 @@ namespace RGBPlayer
 
 			_MusicTimer = new DispatcherTimer();
 			_MusicTimer.Tick += _MusicTimer_Tick;
-			_MusicTimer.Interval = TimeSpan.FromSeconds(0.01);
 			_MusicTimer.Start();
 
 			_NoteData = new ObservableCollection<NoteData>();
@@ -460,7 +459,7 @@ namespace RGBPlayer
 		{
 			double currentPos = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
 			double beatDelay = 1 / (BPM / 60.0);
-			int beatMul = Convert.ToInt32(((currentPos + 1.0) - BPMOffset / 1000.0) / beatDelay);
+			int beatMul = Convert.ToInt32(((currentPos) - BPMOffset / 1000.0) / beatDelay);
 			_NextBeatTime = (beatDelay * beatMul) + BPMOffset / 1000.0;
 			Debug.Print("{0} - {1}", currentPos.ToString("f3"), _NextBeatTime.ToString("f3"));
 		}
