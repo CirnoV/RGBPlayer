@@ -88,6 +88,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Music.cs" />
+    <Compile Include="Models\BPM.cs" />
     <Compile Include="Models\Note.cs" />
     <Compile Include="Models\NoteData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

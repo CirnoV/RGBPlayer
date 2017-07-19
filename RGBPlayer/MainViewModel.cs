@@ -20,45 +20,61 @@ namespace RGBPlayer
 	public class MainViewModel : Notifier
 	{
 		private readonly OpenFileDialog _FileDialog;
-		private int _BGMChannel;
-		private double _BGMLength => Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetLength(_BGMChannel));
-		private double _BGMCurrentTime => Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
+		private Music Music;
 
 		DispatcherTimer _MusicTimer;
 
 		private int _BPMTemp;
-		private List<int> _BPMTempList;
+		private List<int> _BPMTimingList;
 
-		#region BPM 변경통지 프로퍼티
-		private double _BPM;
-		public double BPM
+		private BPM _CurrentBPM
 		{
 			get
 			{
-				return Convert.ToDouble(_BPM.ToString("f3"));
+				BPM bpm = BPMList.OrderBy(x => x.Offset).LastOrDefault(x => x.Offset <= Music.CurrentTime * 1000);
+				if(bpm == null)
+				{
+					bpm = BPMList.First();
+				}
+
+				return bpm;
+			}
+		}
+		private double _BeatDelay => 1 / (_CurrentBPM.Value / 60.0);
+		private int _BeatMul => Convert.ToInt32((Music.CurrentTime - _CurrentBPM.Offset / 1000.0) / _BeatDelay);
+		private double _NextBeatTime => (_BeatDelay * _BeatMul) + _CurrentBPM.Offset / 1000.0;
+
+		#region BPMList 변경통지 프로퍼티
+		private ObservableCollection<BPM> _BPMList;
+		public ObservableCollection<BPM> BPMList
+		{
+			get
+			{
+				return _BPMList;
 			}
 			set
 			{
-				_BPM = Convert.ToDouble(value.ToString("f3"));
-				ResetBeat();
-				RaisePropertyChanged(nameof(BPM));
+				RaisePropertyChanged(nameof(BPMList));
 			}
 		}
 		#endregion
 
-		#region BPMOffset 변경통지 프로퍼티
-		private int _BPMOffset;
-		public int BPMOffset
+		#region SelectedBPM 변경통지 프로퍼티
+		private BPM _SelectedBPM;
+		public BPM SelectedBPM
 		{
 			get
 			{
-				return _BPMOffset;
+				if(_SelectedBPM == null)
+				{
+					_SelectedBPM = BPMList.First();
+				}
+				return _SelectedBPM;
 			}
 			set
 			{
-				_BPMOffset = value;
-				ResetBeat();
-				RaisePropertyChanged(nameof(BPMOffset));
+				_SelectedBPM = value;
+				RaisePropertyChanged(nameof(SelectedBPM));
 			}
 		}
 		#endregion
@@ -100,7 +116,7 @@ namespace RGBPlayer
 		{
 			get
 			{
-				return _BGMCurrentTime.ToString("f3");
+				return Music.CurrentTime.ToString("f3");
 			}
 		}
 		#endregion
@@ -111,16 +127,12 @@ namespace RGBPlayer
 		{
 			get
 			{
-				_MusicSlider = (_BGMCurrentTime / _BGMLength) * 100;
+				_MusicSlider = (Music.CurrentTime / Music.Length) * 100;
 				return _MusicSlider;
 			}
 			set
 			{
-				var pos = Bass.ChannelSeconds2Bytes(_BGMChannel, _BGMLength * (value / 100));
-				Bass.ChannelSetPosition(_BGMChannel, pos);
-				_IgnoreNoteTime = _BGMLength * (value / 100);
-				ResetBeat();
-
+				Music.CurrentTime = Music.Length * (value / 100);
 				_MusicSlider = value;
 			}
 		}
@@ -152,9 +164,30 @@ namespace RGBPlayer
 			}
 			set
 			{
-				ResetBeat();
+				//노트와 비트 초기화용
+				Music.CurrentTime = Music.CurrentTime;
+
 				_TimimgTabSelected = value;
 				RaisePropertyChanged(nameof(TimimgTabSelected));
+			}
+		}
+		#endregion
+
+		#region NoteTabSelected 변경통지 프로퍼티
+		private bool _NoteTabSelected;
+		public bool NoteTabSelected
+		{
+			get
+			{
+				return _NoteTabSelected;
+			}
+			set
+			{
+				//노트와 비트 초기화용
+				Music.CurrentTime = Music.CurrentTime;
+
+				_NoteTabSelected = value;
+				RaisePropertyChanged(nameof(NoteTabSelected));
 			}
 		}
 		#endregion
@@ -232,12 +265,12 @@ namespace RGBPlayer
 			}
 		}
 
-		private DelegateCommand _ResetBPMCommand;
-		public ICommand ResetBPMCommand
+		private DelegateCommand _OrderBPMCommand;
+		public ICommand OrderBPMCommand
 		{
 			get
 			{
-				return _ResetBPMCommand ?? (_ResetBPMCommand = new DelegateCommand(x => ResetBPM()));
+				return _OrderBPMCommand ?? (_OrderBPMCommand = new DelegateCommand(x => OrderBPM()));
 			}
 		}
 
@@ -247,6 +280,24 @@ namespace RGBPlayer
 			get
 			{
 				return _SetOffsetCommand ?? (_SetOffsetCommand = new DelegateCommand(x => SetOffset()));
+			}
+		}
+
+		private DelegateCommand _AddTimingCommand;
+		public ICommand AddTimingCommand
+		{
+			get
+			{
+				return _AddTimingCommand ?? (_AddTimingCommand = new DelegateCommand(x => AddTiming()));
+			}
+		}
+
+		private DelegateCommand _RemoveTimingCommand;
+		public ICommand RemoveTimingCommand
+		{
+			get
+			{
+				return _RemoveTimingCommand ?? (_RemoveTimingCommand = new DelegateCommand(x => RemoveTiming()));
 			}
 		}
 		#endregion
@@ -269,6 +320,11 @@ namespace RGBPlayer
 				Application.Current.Shutdown();
 			}
 
+			Music = new Music();
+
+			TimimgTabSelected = true;
+			NoteTabSelected = false;
+
 			_MusicTimer = new DispatcherTimer();
 			_MusicTimer.Tick += _MusicTimer_Tick;
 			_MusicTimer.Start();
@@ -276,36 +332,35 @@ namespace RGBPlayer
 			_NoteData = new ObservableCollection<NoteData>();
 			//_NoteData = new List<Models.NoteData>();
 
-			_BPMTempList = new List<int>();
+			_BPMList = new ObservableCollection<BPM>
+			{
+				new BPM { Value = 0, Offset = 0 }
+			};
+			_BPMTimingList = new List<int>();
 		}
 
-		private double _IgnoreNoteTime;
-		private double _NextBeatTime;
 		private void _MusicTimer_Tick(object sender, EventArgs e)
 		{
-			if (Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
+			if (Music.IsActive == PlaybackState.Playing)
 			{
-				double currentPos = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
 				if (IsPlayNote && !TimimgTabSelected)
 				{
-					var note = NoteData.OrderBy(x => x.NoteTime).FirstOrDefault(x => x.NoteTime > _IgnoreNoteTime && x.NoteTime <= currentPos);
+					var note = NoteData.OrderBy(x => x.NoteTime).FirstOrDefault(x => x.NoteTime > Music.PreviousNote && x.NoteTime <= Music.CurrentTime);
 
 					if (note != null)
 					{
 						PlayNote(note.Note);
-						_IgnoreNoteTime = note.NoteTime;
+						Music.PreviousNote = note.NoteTime;
 					}
-				}else if (TimimgTabSelected && BPM != 0)
+				}else if (TimimgTabSelected && _CurrentBPM.Value != 0)
 				{
-					if(_NextBeatTime <= currentPos)
+					if(Music.PreviousBeat < _NextBeatTime && Music.CurrentTime >= _NextBeatTime)
 					{
-						double beatDelay = 1 / (BPM / 60.0);
-						int beatCount = Convert.ToInt32((currentPos - BPMOffset / 1000.0) / beatDelay);
-						_NextBeatTime = _NextBeatTime + beatDelay;
+						Music.PreviousBeat = _NextBeatTime;
 
 						string beat = "beat.wav";
 
-						if (beatCount % 4 == 0)
+						if (_BeatMul % 4 == 0)
 						{
 							beat = "beat2.wav";
 						}
@@ -329,28 +384,24 @@ namespace RGBPlayer
 
 		public void PlayFile()
 		{
-			Bass.ChannelPlay(_BGMChannel);
-			_IgnoreNoteTime = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
+			Music.Play();
 		}
 
 		public void PauseFile()
 		{
-			if (Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
+			if (Music.IsActive == PlaybackState.Playing)
 			{
-				Bass.ChannelPause(_BGMChannel);
+				Music.Pause();
 			}
 			else
 			{
-				Bass.ChannelPlay(_BGMChannel);
-				_IgnoreNoteTime = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
+				Music.Play();
 			}
 		}
 
 		public void StopFile()
 		{
-			Bass.ChannelStop(_BGMChannel);
-			Bass.ChannelSetPosition(_BGMChannel, 0);
-			_IgnoreNoteTime = 0;
+			Music.Stop();
 
 			RaisePropertyChanged(nameof(MusicTime));
 			RaisePropertyChanged(nameof(MusicSlider));
@@ -363,19 +414,16 @@ namespace RGBPlayer
 				return;
 			}
 
-			Bass.StreamFree(_BGMChannel);
+			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Prescan);
 
-			_BGMChannel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Prescan);
-
-			if (_BGMChannel == 0)
+			if (Music.Channel == 0)
 			{
 				FileStatus = "재생할 파일을 선택해주세요.";
 				return;
 			}
 
-			//Bass.SampleGetChannel(_BGMChannel);
-
-			FileStatus = System.IO.Path.GetFileName(_FileDialog.FileName);
+			FileStatus = Path.GetFileName(_FileDialog.FileName);
+			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.Volume, 0.6);
 		}
 
 		public void Test()
@@ -417,62 +465,68 @@ namespace RGBPlayer
 
 		public void InitBPM()
 		{
-			if (BPMOffset == 0 && _BGMCurrentTime != -1)
+			if (TimimgTabSelected)
 			{
-				BPMOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
-				_BPMTemp = BPMOffset;
-				_BPMTempList.Clear();
-			}
-			else if(Bass.ChannelIsActive(_BGMChannel) == PlaybackState.Playing)
-			{
-				int newOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
-
-				if (_BPMTempList.Count() > 5)
+				var bpm = SelectedBPM;
+				if (bpm.Offset == 0 && Music.CurrentTime != -1)
 				{
-					int timing = (newOffset - _BPMTemp) - Convert.ToInt32(_BPMTempList.Average());
-					if (timing <= 120)
+					bpm.Offset = Convert.ToInt32(Music.CurrentTime * 1000);
+					_BPMTemp = bpm.Offset;
+					_BPMTimingList.Clear();
+				}
+				else if (Music.IsActive == PlaybackState.Playing)
+				{
+					int newOffset = Convert.ToInt32(Music.CurrentTime * 1000);
+
+					//타이밍 5회 이상 입력
+					if (_BPMTimingList.Count() > 5)
 					{
-						_BPMTempList.Add(newOffset - _BPMTemp);
+						int timing = (newOffset - _BPMTemp) - Convert.ToInt32(_BPMTimingList.Average());
+						if (timing <= 120)
+						{
+							_BPMTimingList.Add(newOffset - _BPMTemp);
 
-						BPM = 60.0 / (_BPMTempList.Average() / 1000.0);
+							bpm.Value = 60.0 / (_BPMTimingList.Average() / 1000.0);
 
-						Debug.Print("{0} - {1} = {2} = {3}", newOffset, _BPMTemp, _BPMTempList.Average(), BPM.ToString("f3"));
+							_BPMTemp = newOffset;
 
-						_BPMTemp = newOffset;
-
-						ResetBeat();
+							Music.PreviousBeat = Music.CurrentTime + 1;
+						}
+						else
+						{
+							Music.CurrentTime = _BPMTemp / 1000.0;
+						}
 					}
 					else
 					{
-						Bass.ChannelSetPosition(_BGMChannel, Bass.ChannelSeconds2Bytes(_BGMChannel, _BPMTemp / 1000.0));
+						_BPMTimingList.Add(newOffset - _BPMTemp);
+						_BPMTemp = newOffset;
 					}
-				}
-				else
-				{
-					_BPMTempList.Add(newOffset - _BPMTemp);
-					_BPMTemp = newOffset;
-				}
+				} 
 			}
 		}
 
-		public void ResetBeat()
+		public void OrderBPM()
 		{
-			double currentPos = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
-			double beatDelay = 1 / (BPM / 60.0);
-			int beatMul = Convert.ToInt32(((currentPos) - BPMOffset / 1000.0) / beatDelay);
-			_NextBeatTime = (beatDelay * beatMul) + BPMOffset / 1000.0;
-			Debug.Print("{0} - {1}", currentPos.ToString("f3"), _NextBeatTime.ToString("f3"));
-		}
-
-		public void ResetBPM()
-		{
-			BPM = 0.0;
-			BPMOffset = 0;
+			BPMList = new ObservableCollection<BPM>(BPMList.OrderBy(x => x.Offset));
 		}
 
 		public void SetOffset()
 		{
-			int newOffset = Convert.ToInt32(Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel)) * 1000);
+			_SelectedBPM.Offset = Convert.ToInt32(Music.CurrentTime * 1000);
+		}
+
+		public void AddTiming()
+		{
+			BPMList.Add(new BPM { Value = 0, Offset = 0 });
+		}
+
+		public void RemoveTiming()
+		{
+			if (BPMList.Count() > 1)
+			{
+				BPMList.Remove(SelectedBPM);
+			}
 		}
 
 		#region KeyBinding
@@ -484,31 +538,34 @@ namespace RGBPlayer
 
 		public void KeyDown()
 		{
-			foreach (var note in RGBData.Current.NoteList)
+			if (NoteTabSelected)
 			{
-				if ((Keyboard.IsKeyDown(note.Value.Input1) && !note.Value.IsInput1Down)
-					|| (Keyboard.IsKeyDown(note.Value.Input2) && !note.Value.IsInput2Down))
+				foreach (var note in RGBData.Current.NoteList)
 				{
-					if (Keyboard.IsKeyDown(note.Value.Input1))
+					if ((Keyboard.IsKeyDown(note.Value.Input1) && !note.Value.IsInput1Down)
+						|| (Keyboard.IsKeyDown(note.Value.Input2) && !note.Value.IsInput2Down))
 					{
-						note.Value.IsInput1Down = true;
-					}
-					if (Keyboard.IsKeyDown(note.Value.Input2))
-					{
-						note.Value.IsInput2Down = true;
-					}
-
-					PlayNote(note.Value);
-
-					NoteData.Add(
-						new NoteData
+						if (Keyboard.IsKeyDown(note.Value.Input1))
 						{
-							Note = note.Value,
-							NoteTime = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel))
+							note.Value.IsInput1Down = true;
 						}
-					);
-					_IgnoreNoteTime = Bass.ChannelBytes2Seconds(_BGMChannel, Bass.ChannelGetPosition(_BGMChannel));
-					RaisePropertyChanged(nameof(NoteData));
+						if (Keyboard.IsKeyDown(note.Value.Input2))
+						{
+							note.Value.IsInput2Down = true;
+						}
+
+						PlayNote(note.Value);
+
+						NoteData.Add(
+							new NoteData
+							{
+								Note = note.Value,
+								NoteTime = Music.CurrentTime
+							}
+						);
+						Music.PreviousNote = Music.CurrentTime;
+						RaisePropertyChanged(nameof(NoteData));
+					}
 				}
 			}
 		}
