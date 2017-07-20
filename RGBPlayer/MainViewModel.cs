@@ -1,5 +1,4 @@
 ﻿using ManagedBass;
-using ManagedBass.Fx;
 using Microsoft.Win32;
 using RGBPlayer.Core;
 using RGBPlayer.Models;
@@ -21,7 +20,7 @@ namespace RGBPlayer
 	public class MainViewModel : Notifier
 	{
 		private readonly OpenFileDialog _FileDialog;
-		private Music Music;
+		public Music Music;
 
 		Timer _MusicTimer;
 
@@ -88,6 +87,22 @@ namespace RGBPlayer
 			{
 				_SelectedBPM = value;
 				RaisePropertyChanged(nameof(SelectedBPM));
+			}
+		}
+		#endregion
+
+		#region SelectedNote 변경통지 프로퍼티
+		private NoteData _SelectedNote;
+		public NoteData SelectedNote
+		{
+			get
+			{
+				return _SelectedNote;
+			}
+			set
+			{
+				_SelectedNote = value;
+				RaisePropertyChanged(nameof(SelectedNote));
 			}
 		}
 		#endregion
@@ -236,9 +251,6 @@ namespace RGBPlayer
 			}
 			set
 			{
-				//노트와 비트 초기화용
-				Music.CurrentTime = Music.CurrentTime;
-
 				_TimimgTabSelected = value;
 				RaisePropertyChanged(nameof(TimimgTabSelected));
 			}
@@ -255,9 +267,6 @@ namespace RGBPlayer
 			}
 			set
 			{
-				//노트와 비트 초기화용
-				Music.CurrentTime = Music.CurrentTime;
-
 				_NoteTabSelected = value;
 				RaisePropertyChanged(nameof(NoteTabSelected));
 			}
@@ -443,6 +452,7 @@ namespace RGBPlayer
 					{
 						PlayNote(note.Note);
 						Music.PreviousNote = note.NoteTime;
+						SelectedNote = note;
 					}
 				}
 				if (_CurrentBPM.Value != 0)
@@ -664,8 +674,6 @@ namespace RGBPlayer
 							? previousBeat
 							: nextBeat;
 						//noteTime = Music.CurrentTime;
-
-						Debug.Print("{0} - {1} - {2} = {3}", previousBeat, Music.CurrentTime, nextBeat, noteTime);
 
 						noteTime = (Convert.ToInt32(noteTime * 1000) + noteCount) / 1000.0;
 

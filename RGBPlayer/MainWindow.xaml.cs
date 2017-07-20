@@ -34,6 +34,15 @@ namespace RGBPlayer
 
 		private void MetroWindow_KeyDown(object sender, KeyEventArgs e)
 		{
+			if (Keyboard.IsKeyDown(Key.Left))
+			{
+				((MainViewModel)DataContext).Music.CurrentTime -= 1.0;
+			}
+			if (Keyboard.IsKeyDown(Key.Right))
+			{
+				((MainViewModel)DataContext).Music.CurrentTime += 1.0;
+			}
+
 			if (NoteTab.IsSelected)
 			{
 				if (Keyboard.IsKeyDown(Key.Delete) || Keyboard.IsKeyDown(Key.Back))

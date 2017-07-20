@@ -90,6 +90,7 @@
 						<ListView x:Name="NoteList"
 								  Grid.Column="0"
 								  ItemsSource="{Binding NoteData}"
+								  SelectedItem="{Binding SelectedNote}"
 								  Background="#FF202020"
 								  BorderThickness=".99"
 								  SelectionMode="Extended">
