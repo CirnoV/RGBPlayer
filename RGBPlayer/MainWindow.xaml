@@ -121,7 +121,7 @@
 										TickFrequency="1"
 										Minimum="1"
 										Maximum="7"
-										Value="{Binding NoteDiv}"/>
+										Value="{Binding NoteDivSlider}"/>
 							</DockPanel>
 							<DockPanel Margin="5">
 								<TextBlock Text="재생 속도 설정"/>

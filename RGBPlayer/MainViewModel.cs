@@ -41,36 +41,11 @@ namespace RGBPlayer
 				}
 
 				BPM newBPM = new BPM();
-				double bpmMul = 1.0;
+				int bpmMul = 1;
 
 				if (NoteTabSelected)
 				{
-					switch (NoteDiv)
-					{
-						case 1:
-							bpmMul = 1.0;
-							break;
-						case 2:
-							bpmMul = 2.0;
-							break;
-						case 3:
-							bpmMul = 3.0;
-							break;
-						case 4:
-							bpmMul = 4.0;
-							break;
-						case 5:
-							bpmMul = 8.0;
-							break;
-						case 6:
-							bpmMul = 12.0;
-							break;
-						case 7:
-							bpmMul = 16.0;
-							break;
-						default:
-							break;
-					}
+					bpmMul = NoteDiv;
 				}
 
 				newBPM.Value = bpm.Value * bpmMul;
@@ -208,18 +183,50 @@ namespace RGBPlayer
 		}
 		#endregion
 
-		#region NoteDiv 변경통지 프로퍼티
-		private double _NoteDiv;
-		public double NoteDiv
+		#region NoteDivSlider 변경통지 프로퍼티
+		private double _NoteDivSlider;
+		public double NoteDivSlider
 		{
 			get
 			{
-				return _NoteDiv;
+				return _NoteDivSlider;
 			}
 			set
 			{
-				_NoteDiv = value;
-				RaisePropertyChanged(nameof(NoteDiv));
+				_NoteDivSlider = value;
+				RaisePropertyChanged(nameof(NoteDivSlider));
+			}
+		}
+		#endregion
+
+		#region NoteDivTooltip 프로퍼티
+		public string NoteDivTooltip => "1/"+NoteDivSlider;
+		#endregion
+
+		#region NoteDiv 프로퍼티
+		public int NoteDiv
+		{
+			get
+			{
+				switch (NoteDivSlider)
+				{
+					case 1:
+						return 1;
+					case 2:
+						return 2;
+					case 3:
+						return 3;
+					case 4:
+						return 4;
+					case 5:
+						return 8;
+					case 6:
+						return 12;
+					case 7:
+						return 16;
+					default:
+						return 1;
+				}
 			}
 		}
 		#endregion
@@ -397,7 +404,7 @@ namespace RGBPlayer
 
 			_MusicTimer = new DispatcherTimer();
 			_MusicTimer.Tick += _MusicTimer_Tick;
-			_MusicTimer.Interval = TimeSpan.FromSeconds(0.01);
+			_MusicTimer.Interval = TimeSpan.FromSeconds(0.001);
 			_MusicTimer.Start();
 
 			_NoteData = new ObservableCollection<NoteData>();
