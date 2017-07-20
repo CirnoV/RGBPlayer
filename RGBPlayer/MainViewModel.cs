@@ -1,4 +1,5 @@
 ﻿using ManagedBass;
+using ManagedBass.Fx;
 using Microsoft.Win32;
 using RGBPlayer.Core;
 using RGBPlayer.Models;
@@ -12,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -32,12 +34,49 @@ namespace RGBPlayer
 			get
 			{
 				BPM bpm = BPMList.OrderBy(x => x.Offset).LastOrDefault(x => x.Offset <= Music.CurrentTime * 1000);
-				if(bpm == null)
+
+				if (bpm == null)
 				{
 					bpm = BPMList.First();
 				}
 
-				return bpm;
+				BPM newBPM = new BPM();
+				double bpmMul = 1.0;
+
+				if (NoteTabSelected)
+				{
+					switch (NoteDiv)
+					{
+						case 1:
+							bpmMul = 1.0;
+							break;
+						case 2:
+							bpmMul = 2.0;
+							break;
+						case 3:
+							bpmMul = 3.0;
+							break;
+						case 4:
+							bpmMul = 4.0;
+							break;
+						case 5:
+							bpmMul = 8.0;
+							break;
+						case 6:
+							bpmMul = 12.0;
+							break;
+						case 7:
+							bpmMul = 16.0;
+							break;
+						default:
+							break;
+					}
+				}
+
+				newBPM.Value = bpm.Value * bpmMul;
+				newBPM.Offset = bpm.Offset;
+
+				return newBPM;
 			}
 		}
 		private double _BeatDelay => 1 / (_CurrentBPM.Value / 60.0);
@@ -138,6 +177,21 @@ namespace RGBPlayer
 		}
 		#endregion
 
+		#region MusicTempo 변경통지 프로퍼티
+		public double MusicTempo
+		{
+			get
+			{
+				return Music.Tempo;
+			}
+			set
+			{
+				Music.Tempo = value;
+				RaisePropertyChanged(nameof(MusicTempo));
+			}
+		}
+		#endregion
+
 		#region IsPlayNote 변경통지 프로퍼티
 		private bool _IsPlayNote;
 		public bool IsPlayNote
@@ -150,6 +204,22 @@ namespace RGBPlayer
 			{
 				_IsPlayNote = value;
 				RaisePropertyChanged(nameof(IsPlayNote));
+			}
+		}
+		#endregion
+
+		#region NoteDiv 변경통지 프로퍼티
+		private double _NoteDiv;
+		public double NoteDiv
+		{
+			get
+			{
+				return _NoteDiv;
+			}
+			set
+			{
+				_NoteDiv = value;
+				RaisePropertyChanged(nameof(NoteDiv));
 			}
 		}
 		#endregion
@@ -327,6 +397,7 @@ namespace RGBPlayer
 
 			_MusicTimer = new DispatcherTimer();
 			_MusicTimer.Tick += _MusicTimer_Tick;
+			_MusicTimer.Interval = TimeSpan.FromSeconds(0.01);
 			_MusicTimer.Start();
 
 			_NoteData = new ObservableCollection<NoteData>();
@@ -345,35 +416,44 @@ namespace RGBPlayer
 			{
 				if (IsPlayNote && !TimimgTabSelected)
 				{
-					var note = NoteData.OrderBy(x => x.NoteTime).FirstOrDefault(x => x.NoteTime > Music.PreviousNote && x.NoteTime <= Music.CurrentTime);
+					var noteList = NoteData
+						.OrderBy(x => x.NoteTime)
+						.Where(x => x.NoteTime > Music.PreviousNote && x.NoteTime <= Music.CurrentTime);
 
-					if (note != null)
+					var firstNote = noteList.FirstOrDefault();
+
+					noteList = noteList.Where(x => x.NoteTime == firstNote?.NoteTime).ToList();
+					
+					foreach (var note in noteList)
 					{
 						PlayNote(note.Note);
 						Music.PreviousNote = note.NoteTime;
 					}
-				}else if (TimimgTabSelected && _CurrentBPM.Value != 0)
+				}else if (_CurrentBPM.Value != 0)
 				{
 					if(Music.PreviousBeat < _NextBeatTime && Music.CurrentTime >= _NextBeatTime)
 					{
 						Music.PreviousBeat = _NextBeatTime;
 
-						string beat = "beat.wav";
-
-						if (_BeatMul % 4 == 0)
+						if (TimimgTabSelected)
 						{
-							beat = "beat2.wav";
+							string beat = "beat.wav";
+
+							if (_BeatMul % 4 == 0)
+							{
+								beat = "beat2.wav";
+							}
+
+							//EntryAssembly/sound/FileName
+							var soundPath = Path.Combine(
+								Path.GetDirectoryName(Assembly.GetEntryAssembly().Location),
+								"sound",
+								beat
+							);
+
+							int channel = Bass.CreateStream(soundPath, 0, 0, BassFlags.Prescan | BassFlags.AutoFree);
+							Bass.ChannelPlay(channel);
 						}
-
-						//EntryAssembly/sound/FileName
-						var soundPath = Path.Combine(
-							Path.GetDirectoryName(Assembly.GetEntryAssembly().Location),
-							"sound",
-							beat
-						);
-
-						int channel = Bass.CreateStream(soundPath, 0, 0, BassFlags.Prescan | BassFlags.AutoFree);
-						Bass.ChannelPlay(channel);
 					}
 				}
 			}
@@ -414,7 +494,7 @@ namespace RGBPlayer
 				return;
 			}
 
-			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Prescan);
+			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Decode);
 
 			if (Music.Channel == 0)
 			{
@@ -422,8 +502,13 @@ namespace RGBPlayer
 				return;
 			}
 
+			Music.Channel = BassFx.TempoCreate(Music.Channel, BassFlags.AutoFree | BassFlags.FxFreeSource);
+
 			FileStatus = Path.GetFileName(_FileDialog.FileName);
-			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.Volume, 0.6);
+			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.Volume, 0.8);
+			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoUseQuickAlgorithm, 1);
+			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoOverlapMilliseconds, 4);
+			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoSequenceMilliseconds, 30);
 		}
 
 		public void Test()
@@ -556,14 +641,26 @@ namespace RGBPlayer
 
 						PlayNote(note.Value);
 
-						NoteData.Add(
-							new NoteData
-							{
-								Note = note.Value,
-								NoteTime = Music.CurrentTime
-							}
-						);
-						Music.PreviousNote = Music.CurrentTime;
+						double noteTime = Music.CurrentTime;
+						double previousBeat = Music.PreviousBeat;
+						double nextBeat = _NextBeatTime;
+
+						noteTime =
+							Math.Abs(previousBeat - noteTime) < Math.Abs(nextBeat - noteTime)
+							? previousBeat
+							: nextBeat;
+
+						if (!NoteData.Any(x => x.NoteTime == noteTime && x.Note == note.Value))
+						{
+							NoteData.Add(
+								new NoteData
+								{
+									Note = note.Value,
+									NoteTime = noteTime
+								}
+							);
+							Music.PreviousNote = noteTime;
+						}
 						RaisePropertyChanged(nameof(NoteData));
 					}
 				}

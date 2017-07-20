@@ -75,37 +75,67 @@
 						<RowDefinition Height="Auto"/>
 					</Grid.RowDefinitions>
 
-					<ListView x:Name="NoteList"
-							  BorderBrush="{x:Null}"
-							  ItemsSource="{Binding NoteData}"
-							  Background="#FF202020"
-							  BorderThickness=".99"
-							  SelectionMode="Extended">
-						<ListView.View>
-							<GridView>
-								<GridViewColumn Width="Auto">
-									<GridViewColumn.CellTemplate>
-										<DataTemplate>
-											<TextBlock Text="{Binding NoteTimeText}"/>
-										</DataTemplate>
-									</GridViewColumn.CellTemplate>
-									<GridViewColumnHeader>
-										<TextBlock Text="시간"/>
-									</GridViewColumnHeader>
-								</GridViewColumn>
-								<GridViewColumn Width="Auto">
-									<GridViewColumn.CellTemplate>
-										<DataTemplate>
-											<TextBlock Text="{Binding Note.NoteName}"/>
-										</DataTemplate>
-									</GridViewColumn.CellTemplate>
-									<GridViewColumnHeader>
-										<TextBlock Text="노트"/>
-									</GridViewColumnHeader>
-								</GridViewColumn>
-							</GridView>
-						</ListView.View>
-					</ListView>
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						
+						<ListView x:Name="NoteList"
+								  Grid.Column="0"
+								  ItemsSource="{Binding NoteData}"
+								  Background="#FF202020"
+								  BorderThickness=".99"
+								  SelectionMode="Extended">
+							<ListView.View>
+								<GridView>
+									<GridViewColumn Width="Auto">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Text="{Binding NoteTimeText}"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+										<GridViewColumnHeader>
+											<TextBlock Text="시간"/>
+										</GridViewColumnHeader>
+									</GridViewColumn>
+									<GridViewColumn Width="Auto">
+										<GridViewColumn.CellTemplate>
+											<DataTemplate>
+												<TextBlock Text="{Binding Note.NoteName}"/>
+											</DataTemplate>
+										</GridViewColumn.CellTemplate>
+										<GridViewColumnHeader>
+											<TextBlock Text="노트"/>
+										</GridViewColumnHeader>
+									</GridViewColumn>
+								</GridView>
+							</ListView.View>
+						</ListView>
+						<StackPanel Grid.Column="1">
+							<DockPanel Margin="5">
+								<TextBlock Text="노트 배치 나눗수"/>
+								<Slider Margin="5,0,0,0"
+										IsSnapToTickEnabled="True"
+										TickPlacement="Both"
+										TickFrequency="1"
+										Minimum="1"
+										Maximum="7"
+										Value="{Binding NoteDiv}"/>
+							</DockPanel>
+							<DockPanel Margin="5">
+								<TextBlock Text="재생 속도 설정"/>
+								<Slider Margin="5,0,0,0"
+										IsSnapToTickEnabled="True"
+										TickPlacement="Both"
+										TickFrequency="25"
+										Minimum="-75"
+										Maximum="0"
+										Value="{Binding MusicTempo}"
+										ToolTip="{Binding MusicTempo}"/>
+							</DockPanel>
+						</StackPanel>
+					</Grid>
 					<Grid Grid.Row="1">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*"/>
@@ -140,7 +170,6 @@
 							</Grid.RowDefinitions>
 
 							<ListView Grid.Row="0"
-									  BorderBrush="{x:Null}"
 									  ItemsSource="{Binding BPMList}"
 									  SelectedItem="{Binding SelectedBPM}"
 									  Background="#FF202020"
