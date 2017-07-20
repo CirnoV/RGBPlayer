@@ -44,19 +44,6 @@ namespace RGBPlayer.Models
 				return Bass.ChannelBytes2Seconds(Channel, Bass.ChannelGetLength(Channel));
 			}
 		}
-		private double _Tempo;
-		public double Tempo
-		{
-			get
-			{
-				return _Tempo;
-			}
-			set
-			{
-				_Tempo = value;
-				Bass.ChannelSetAttribute(Channel, ChannelAttribute.Tempo, Tempo);
-			}
-		}
 
 		public PlaybackState IsActive => Bass.ChannelIsActive(Channel);
 

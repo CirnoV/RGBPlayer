@@ -53,10 +53,16 @@
 					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 
-				<TextBlock Grid.Column="0"
-						   Margin="5,0,0,0"
-						   VerticalAlignment="Center"
-						   Text="{Binding MusicTime}"/>
+				<DockPanel>
+					<TextBlock Grid.Column="0"
+							   Margin="5,0,0,0"
+							   VerticalAlignment="Center"
+							   Text="{Binding MusicTime}"/>
+					<TextBlock Grid.Column="0"
+							   Margin="5,0,0,0"
+							   VerticalAlignment="Center"
+							   Text="{Binding BeatTime}"/>
+				</DockPanel>
 				<CheckBox Grid.Column="1"
 						  VerticalAlignment="Center"
 						  Content="재생시 노트 소리 듣기"
@@ -115,24 +121,17 @@
 						<StackPanel Grid.Column="1">
 							<DockPanel Margin="5">
 								<TextBlock Text="노트 배치 나눗수"/>
-								<Slider Margin="5,0,0,0"
+								<Slider DockPanel.Dock="Top" Margin="5,0,0,5"
 										IsSnapToTickEnabled="True"
 										TickPlacement="Both"
 										TickFrequency="1"
 										Minimum="1"
 										Maximum="7"
-										Value="{Binding NoteDivSlider}"/>
-							</DockPanel>
-							<DockPanel Margin="5">
-								<TextBlock Text="재생 속도 설정"/>
-								<Slider Margin="5,0,0,0"
-										IsSnapToTickEnabled="True"
-										TickPlacement="Both"
-										TickFrequency="25"
-										Minimum="-75"
-										Maximum="0"
-										Value="{Binding MusicTempo}"
-										ToolTip="{Binding MusicTempo}"/>
+										Value="{Binding NoteDivSlider}"
+										ToolTip="{Binding NoteDivTooltip}"/>
+								<CheckBox HorizontalAlignment="Right"
+										  Content="미리보기"
+										  IsChecked="{Binding NoteDivPreview}"/>
 							</DockPanel>
 						</StackPanel>
 					</Grid>

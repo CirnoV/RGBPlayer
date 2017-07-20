@@ -11,9 +11,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -24,7 +23,7 @@ namespace RGBPlayer
 		private readonly OpenFileDialog _FileDialog;
 		private Music Music;
 
-		DispatcherTimer _MusicTimer;
+		Timer _MusicTimer;
 
 		private int _BPMTemp;
 		private List<int> _BPMTimingList;
@@ -79,7 +78,7 @@ namespace RGBPlayer
 		{
 			get
 			{
-				if(_SelectedBPM == null)
+				if (_SelectedBPM == null)
 				{
 					_SelectedBPM = BPMList.First();
 				}
@@ -135,6 +134,16 @@ namespace RGBPlayer
 		}
 		#endregion
 
+		#region BeatTime 프로퍼티
+		public string BeatTime
+		{
+			get
+			{
+				return Music.PreviousBeat.ToString("f3");
+			}
+		}
+		#endregion
+
 		#region MusicSlider 변경통지 프로퍼티
 		private double _MusicSlider;
 		public double MusicSlider
@@ -148,21 +157,6 @@ namespace RGBPlayer
 			{
 				Music.CurrentTime = Music.Length * (value / 100);
 				_MusicSlider = value;
-			}
-		}
-		#endregion
-
-		#region MusicTempo 변경통지 프로퍼티
-		public double MusicTempo
-		{
-			get
-			{
-				return Music.Tempo;
-			}
-			set
-			{
-				Music.Tempo = value;
-				RaisePropertyChanged(nameof(MusicTempo));
 			}
 		}
 		#endregion
@@ -195,12 +189,13 @@ namespace RGBPlayer
 			{
 				_NoteDivSlider = value;
 				RaisePropertyChanged(nameof(NoteDivSlider));
+				RaisePropertyChanged(nameof(NoteDivTooltip));
 			}
 		}
 		#endregion
 
 		#region NoteDivTooltip 프로퍼티
-		public string NoteDivTooltip => "1/"+NoteDivSlider;
+		public string NoteDivTooltip => "1/" + NoteDiv;
 		#endregion
 
 		#region NoteDiv 프로퍼티
@@ -264,6 +259,22 @@ namespace RGBPlayer
 				Music.CurrentTime = Music.CurrentTime;
 
 				_NoteTabSelected = value;
+				RaisePropertyChanged(nameof(NoteTabSelected));
+			}
+		}
+		#endregion
+
+		#region NoteDivPreview 변경통지 프로퍼티
+		private bool _NoteDivPreview;
+		public bool NoteDivPreview
+		{
+			get
+			{
+				return _NoteDivPreview;
+			}
+			set
+			{
+				_NoteDivPreview = value;
 				RaisePropertyChanged(nameof(NoteTabSelected));
 			}
 		}
@@ -402,9 +413,9 @@ namespace RGBPlayer
 			TimimgTabSelected = true;
 			NoteTabSelected = false;
 
-			_MusicTimer = new DispatcherTimer();
-			_MusicTimer.Tick += _MusicTimer_Tick;
-			_MusicTimer.Interval = TimeSpan.FromSeconds(0.001);
+			_MusicTimer = new Timer();
+			_MusicTimer.Elapsed += _MusicTimer_Elapsed;
+			_MusicTimer.Interval = 1;
 			_MusicTimer.Start();
 
 			_NoteData = new ObservableCollection<NoteData>();
@@ -417,36 +428,35 @@ namespace RGBPlayer
 			_BPMTimingList = new List<int>();
 		}
 
-		private void _MusicTimer_Tick(object sender, EventArgs e)
+		private void _MusicTimer_Elapsed(object sender, ElapsedEventArgs e)
 		{
 			if (Music.IsActive == PlaybackState.Playing)
 			{
-				if (IsPlayNote && !TimimgTabSelected)
+				if (IsPlayNote && NoteTabSelected)
 				{
-					var noteList = NoteData
+					NoteData note = NoteData
 						.OrderBy(x => x.NoteTime)
-						.Where(x => x.NoteTime > Music.PreviousNote && x.NoteTime <= Music.CurrentTime);
+						.Where(x => x.NoteTime <= Music.CurrentTime)
+						.LastOrDefault(x => x.NoteTime > Music.PreviousNote);
 
-					var firstNote = noteList.FirstOrDefault();
-
-					noteList = noteList.Where(x => x.NoteTime == firstNote?.NoteTime).ToList();
-					
-					foreach (var note in noteList)
+					if (note != null)
 					{
 						PlayNote(note.Note);
 						Music.PreviousNote = note.NoteTime;
 					}
-				}else if (_CurrentBPM.Value != 0)
+				}
+				if (_CurrentBPM.Value != 0)
 				{
-					if(Music.PreviousBeat < _NextBeatTime && Music.CurrentTime >= _NextBeatTime)
+					if (Music.PreviousBeat < _NextBeatTime && Music.CurrentTime >= _NextBeatTime)
 					{
 						Music.PreviousBeat = _NextBeatTime;
+						RaisePropertyChanged("BeatTime");
 
-						if (TimimgTabSelected)
+						if (TimimgTabSelected || NoteDivPreview)
 						{
 							string beat = "beat.wav";
 
-							if (_BeatMul % 4 == 0)
+							if (_BeatMul % 4 == 0 && !NoteDivPreview)
 							{
 								beat = "beat2.wav";
 							}
@@ -501,7 +511,7 @@ namespace RGBPlayer
 				return;
 			}
 
-			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Decode);
+			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Prescan);
 
 			if (Music.Channel == 0)
 			{
@@ -509,13 +519,8 @@ namespace RGBPlayer
 				return;
 			}
 
-			Music.Channel = BassFx.TempoCreate(Music.Channel, BassFlags.AutoFree | BassFlags.FxFreeSource);
-
 			FileStatus = Path.GetFileName(_FileDialog.FileName);
 			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.Volume, 0.8);
-			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoUseQuickAlgorithm, 1);
-			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoOverlapMilliseconds, 4);
-			Bass.ChannelSetAttribute(Music.Channel, ChannelAttribute.TempoSequenceMilliseconds, 30);
 		}
 
 		public void Test()
@@ -594,13 +599,14 @@ namespace RGBPlayer
 						_BPMTimingList.Add(newOffset - _BPMTemp);
 						_BPMTemp = newOffset;
 					}
-				} 
+				}
 			}
 		}
 
 		public void OrderBPM()
 		{
 			BPMList = new ObservableCollection<BPM>(BPMList.OrderBy(x => x.Offset));
+			RaisePropertyChanged(nameof(BPMList));
 		}
 
 		public void SetOffset()
@@ -632,6 +638,7 @@ namespace RGBPlayer
 		{
 			if (NoteTabSelected)
 			{
+				int noteCount = 0;
 				foreach (var note in RGBData.Current.NoteList)
 				{
 					if ((Keyboard.IsKeyDown(note.Value.Input1) && !note.Value.IsInput1Down)
@@ -650,14 +657,20 @@ namespace RGBPlayer
 
 						double noteTime = Music.CurrentTime;
 						double previousBeat = Music.PreviousBeat;
-						double nextBeat = _NextBeatTime;
+						double nextBeat = previousBeat + _BeatDelay;
 
 						noteTime =
-							Math.Abs(previousBeat - noteTime) < Math.Abs(nextBeat - noteTime)
+							noteTime - previousBeat < nextBeat - noteTime
 							? previousBeat
 							: nextBeat;
+						//noteTime = Music.CurrentTime;
 
-						if (!NoteData.Any(x => x.NoteTime == noteTime && x.Note == note.Value))
+						Debug.Print("{0} - {1} - {2} = {3}", previousBeat, Music.CurrentTime, nextBeat, noteTime);
+
+						noteTime = (Convert.ToInt32(noteTime * 1000) + noteCount) / 1000.0;
+
+						//비교 연산을 위한 정수화
+						if (!NoteData.Any(x => Convert.ToInt32(x.NoteTime * 1000) == Convert.ToInt32(noteTime * 1000)))
 						{
 							NoteData.Add(
 								new NoteData
@@ -667,9 +680,21 @@ namespace RGBPlayer
 								}
 							);
 							Music.PreviousNote = noteTime;
+							RaisePropertyChanged(nameof(NoteData));
 						}
-						RaisePropertyChanged(nameof(NoteData));
+						/*else if (noteTime == previousBeat)
+						{
+							NoteData.Add(
+								new NoteData
+								{
+									Note = note.Value,
+									NoteTime = nextBeat
+								}
+							);
+							RaisePropertyChanged(nameof(NoteData));
+						}*/
 					}
+					noteCount++;
 				}
 			}
 		}
