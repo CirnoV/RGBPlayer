@@ -142,7 +142,7 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 
-						<Button Grid.Column="0" Margin="5" Content="노트 정리" Command="{Binding OrderNoteCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+						<Button Grid.Column="0" Margin="5" Content="노트 정렬" Command="{Binding OrderNoteCommand}" Style="{DynamicResource SquareButtonStyle}"/>
 						<Button Grid.Column="1" Margin="5" Content="노트 스크립트 복사" Command="{Binding CopyNoteCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
 					</Grid>
 				</Grid>
@@ -232,7 +232,7 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 
-						<Button Grid.Column="0" Margin="5" Content="타이밍 정리" Command="{Binding OrderBPMCommand}" Style="{DynamicResource SquareButtonStyle}"/>
+						<Button Grid.Column="0" Margin="5" Content="타이밍 정렬" Command="{Binding OrderBPMCommand}" Style="{DynamicResource SquareButtonStyle}"/>
 						<Button Grid.Column="1" Margin="5" Content="Offset 설정" Command="{Binding SetOffsetCommand}" Style="{DynamicResource SquareButtonStyle}"/>
 						<Button Grid.Column="2" Margin="5" Content="bpm 측정" ToolTip="박자에 맞춰 버튼을 누르거나 T키를 누르세요." Command="{Binding InitBPMCommand}" Style="{DynamicResource AccentedSquareButtonStyle}"/>
 					</Grid>
