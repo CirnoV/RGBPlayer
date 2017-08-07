@@ -521,6 +521,7 @@ namespace RGBPlayer
 				return;
 			}
 
+			Music.Stop();
 			Music.Channel = Bass.CreateStream(_FileDialog.FileName, 0, 0, BassFlags.Prescan);
 
 			if (Music.Channel == 0)
