@@ -214,6 +214,27 @@ namespace RGBPlayer
 		public string NoteDivTooltip => "1/" + NoteDiv;
 		#endregion
 
+		#region NoteOffsetSlider 변경통지 프로퍼티
+		private double _NoteOffsetSlider;
+		public double NoteOffset
+		{
+			get
+			{
+				return _NoteOffsetSlider;
+			}
+			set
+			{
+				_NoteOffsetSlider = value;
+				RaisePropertyChanged(nameof(NoteOffset));
+				RaisePropertyChanged(nameof(NoteOffsetTooltip));
+			}
+		}
+		#endregion
+
+		#region NoteOffsetTooltip 프로퍼티
+		public string NoteOffsetTooltip => NoteOffset > 0 ? "+" + NoteOffset : NoteOffset.ToString();
+		#endregion
+
 		#region NoteDiv 프로퍼티
 		public int NoteDiv
 		{
@@ -446,13 +467,13 @@ namespace RGBPlayer
 				{
 					NoteData note = NoteData
 						.OrderBy(x => x.NoteTime)
-						.Where(x => x.NoteTime <= Music.CurrentTime)
-						.LastOrDefault(x => x.NoteTime > Music.PreviousNote);
+						.Where(x => x.NoteTime + NoteOffset <= Music.CurrentTime)
+						.LastOrDefault(x => x.NoteTime + NoteOffset > Music.PreviousNote);
 
 					if (note != null)
 					{
 						PlayNote(note.Note);
-						Music.PreviousNote = note.NoteTime;
+						Music.PreviousNote = note.NoteTime + NoteOffset;
 
 						//SelectedNote 프로퍼티를 조작하면 끊기기 때문에 직접 접근으로 대체
 						_SelectedNote = note;
@@ -555,7 +576,7 @@ namespace RGBPlayer
 			StringBuilder sb = new StringBuilder();
 			foreach (var note in NoteData)
 			{
-				sb.AppendFormat("PushArrayCell({0}, {1});", note.Note.ScriptName, note.NoteTime.ToString("f3"));
+				sb.AppendFormat("PushArrayCell({0}, {1});", note.Note.ScriptName, (note.NoteTime + NoteOffset).ToString("f3"));
 				sb.AppendLine();
 			}
 

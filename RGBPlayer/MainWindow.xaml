@@ -134,6 +134,17 @@
 										  Content="타이밍 듣기"
 										  IsChecked="{Binding NoteDivPreview}"/>
 							</DockPanel>
+							<DockPanel Margin="5">
+								<TextBlock Text="노트 시간 오프셋"/>
+								<Slider DockPanel.Dock="Top" Margin="5,0,0,5"
+										IsSnapToTickEnabled="True"
+										TickPlacement="Both"
+										TickFrequency="0.05"
+										Minimum="-0.5"
+										Maximum="0.5"
+										Value="{Binding NoteOffsetSlider}"
+										ToolTip="{Binding NoteOffsetToolTip}"/>
+							</DockPanel>
 							<TextBlock Margin="5" Text="Normal: A, S"/>
 							<TextBlock Margin="5" Text="Clap: D, F"/>
 							<TextBlock Margin="5" Text="Symbols: G, H"/>
