@@ -101,6 +101,7 @@ namespace RGBPlayer
 			}
 			set
 			{
+				Music.CurrentTime = value.NoteTime;
 				_SelectedNote = value;
 				RaisePropertyChanged(nameof(SelectedNote));
 			}
@@ -452,7 +453,10 @@ namespace RGBPlayer
 					{
 						PlayNote(note.Note);
 						Music.PreviousNote = note.NoteTime;
-						SelectedNote = note;
+
+						//SelectedNote 프로퍼티를 조작하면 끊기기 때문에 직접 접근으로 대체
+						_SelectedNote = note;
+						RaisePropertyChanged(nameof(SelectedNote));
 					}
 				}
 				if (_CurrentBPM.Value != 0)
