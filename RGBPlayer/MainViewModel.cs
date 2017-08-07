@@ -101,7 +101,7 @@ namespace RGBPlayer
 			}
 			set
 			{
-				Music.CurrentTime = value.NoteTime;
+				if(value != null) Music.CurrentTime = value.NoteTime;
 				_SelectedNote = value;
 				RaisePropertyChanged(nameof(SelectedNote));
 			}
@@ -214,17 +214,17 @@ namespace RGBPlayer
 		public string NoteDivTooltip => "1/" + NoteDiv;
 		#endregion
 
-		#region NoteOffsetSlider 변경통지 프로퍼티
-		private double _NoteOffsetSlider;
+		#region NoteOffset 변경통지 프로퍼티
+		private double _NoteOffset;
 		public double NoteOffset
 		{
 			get
 			{
-				return _NoteOffsetSlider;
+				return _NoteOffset;
 			}
 			set
 			{
-				_NoteOffsetSlider = value;
+				_NoteOffset = value;
 				RaisePropertyChanged(nameof(NoteOffset));
 				RaisePropertyChanged(nameof(NoteOffsetTooltip));
 			}
@@ -232,7 +232,7 @@ namespace RGBPlayer
 		#endregion
 
 		#region NoteOffsetTooltip 프로퍼티
-		public string NoteOffsetTooltip => NoteOffset > 0 ? "+" + NoteOffset : NoteOffset.ToString();
+		public string NoteOffsetTooltip => NoteOffset.ToString();
 		#endregion
 
 		#region NoteDiv 프로퍼티

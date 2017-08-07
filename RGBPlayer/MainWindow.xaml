@@ -142,8 +142,8 @@
 										TickFrequency="0.05"
 										Minimum="-0.5"
 										Maximum="0.5"
-										Value="{Binding NoteOffsetSlider}"
-										ToolTip="{Binding NoteOffsetToolTip}"/>
+										Value="{Binding NoteOffset}"
+										ToolTip="{Binding NoteOffsetTooltip}"/>
 							</DockPanel>
 							<TextBlock Margin="5" Text="Normal: A, S"/>
 							<TextBlock Margin="5" Text="Clap: D, F"/>
