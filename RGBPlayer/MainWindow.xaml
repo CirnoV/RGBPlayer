@@ -131,9 +131,12 @@
 										Value="{Binding NoteDivSlider}"
 										ToolTip="{Binding NoteDivTooltip}"/>
 								<CheckBox HorizontalAlignment="Right"
-										  Content="미리보기"
+										  Content="타이밍 듣기"
 										  IsChecked="{Binding NoteDivPreview}"/>
 							</DockPanel>
+							<TextBlock Margin="5" Text="Normal: A, S"/>
+							<TextBlock Margin="5" Text="Clap: D, F"/>
+							<TextBlock Margin="5" Text="Symbols: G, H"/>
 						</StackPanel>
 					</Grid>
 					<Grid Grid.Row="1">
